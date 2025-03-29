@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -43,16 +45,17 @@ public class UserService {
         ));
     }
 
+
     public ResponseEntity<?> registerUser(String username, String password, String email) {
         if (userRepository.existsByEmail(email) || userRepository.existsByUsername(username)) {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Email or Username already exists!"));
         }
 
-        String otpCode = String.valueOf((int) (Math.random() * 9999));
+        String otpCode = String.valueOf(new DecimalFormat("000000").format(new SecureRandom().nextInt(999999)));
         Otp otp = new Otp();
         otp.setEmail(email);
         otp.setOtpCode(otpCode);
-        otp.setExpiryTime(LocalDateTime.now().plusMinutes(10));
+        otp.setExpiryTime(LocalDateTime.now().plusMinutes(100));
         otp.setVerified(false);
         otpRepository.save(otp);
         otpService.sendOtp(email, otpCode);
@@ -60,18 +63,19 @@ public class UserService {
         return ResponseEntity.ok(Map.of("status", "success", "message", "OTP sent to your email. Please verify."));
     }
 
+
     public ResponseEntity<?> verifyRegister(String username, String password, String email, String otpCode) {
         Optional<Otp> otp = otpRepository.findByEmailAndOtpCode(email, otpCode);
 
         if (otp.isEmpty() || otp.get().isVerified()) {
-            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Invalid or already used OTP!"));
+            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Incorrect or already used OTP!"));
         }
         if (otp.get().getExpiryTime().isBefore(LocalDateTime.now())) {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "OTP has expired!"));
         }
 
         Otp verifiedOtp = otp.get();
-        verifiedOtp.setVerified(false);
+        verifiedOtp.setVerified(true);
         otpRepository.save(verifiedOtp);
 
         User user = new User();

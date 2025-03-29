@@ -1,12 +1,12 @@
 package com.example.restapi.account.controller;
 
+import com.example.restapi.account.model.request.LoginRequest;
+import com.example.restapi.account.model.request.RegisterRequest;
+import com.example.restapi.account.model.request.VerifyRegisterRequest;
 import com.example.restapi.account.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/account")
@@ -19,27 +19,28 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestParam String username,
-                                      @RequestParam String password
-    ) {
-        return userService.loginUser(username, password);
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        return userService.loginUser(
+                loginRequest.getUsername(),
+                loginRequest.getPassword());
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestParam String username,
-                                      @RequestParam String password,
-                                      @RequestParam String email
-    ) {
-        return userService.registerUser(username, password, email);
+    public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest) {
+        return userService.registerUser(
+                registerRequest.getUsername(),
+                registerRequest.getPassword(),
+                registerRequest.getEmail());
     }
 
     @PostMapping("/verify-register")
-    public ResponseEntity<?> verifyRegister(@RequestParam String username,
-                                       @RequestParam String password,
-                                       @RequestParam String email,
-                                       @RequestParam String otpCode
-    ) {
-        return userService.verifyRegister(username, password, email, otpCode);
+    public ResponseEntity<?> verifyRegister(@RequestBody VerifyRegisterRequest verifyRegisterRequest)
+    {
+        return userService.verifyRegister(
+                verifyRegisterRequest.getUsername(),
+                verifyRegisterRequest.getPassword(),
+                verifyRegisterRequest.getEmail(),
+                verifyRegisterRequest.getOtpCode());
     }
 
     @PostMapping("/forget")
