@@ -25,6 +25,14 @@ public class UserService {
     @Autowired
     private OtpService otpService;
 
+    private static final int OTP_LENGTH = 6;
+    private static final int OTP_EXPIRY_MINUTES = 10;
+
+    private String generateOtpCode() {
+        SecureRandom random = new SecureRandom();
+        return new DecimalFormat("000000").format(random.nextInt(1000000));
+    }
+
     public ResponseEntity<?> loginUser(String username, String password) {
         Optional<User> userOptional = userRepository.findByUsernameAndPassword(username, password);
 
@@ -45,38 +53,39 @@ public class UserService {
         ));
     }
 
-
     public ResponseEntity<?> registerUser(String username, String password, String email) {
         if (userRepository.existsByEmail(email) || userRepository.existsByUsername(username)) {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Email or Username already exists!"));
         }
 
-        String otpCode = String.valueOf(new DecimalFormat("000000").format(new SecureRandom().nextInt(999999)));
+        String otpCode = generateOtpCode();
+
         Otp otp = new Otp();
         otp.setEmail(email);
         otp.setOtpCode(otpCode);
-        otp.setExpiryTime(LocalDateTime.now().plusMinutes(100));
+        otp.setExpiryTime(LocalDateTime.now().plusMinutes(OTP_EXPIRY_MINUTES));
         otp.setVerified(false);
         otpRepository.save(otp);
+
         otpService.sendOtp(email, otpCode);
 
         return ResponseEntity.ok(Map.of("status", "success", "message", "OTP sent to your email. Please verify."));
     }
 
-
     public ResponseEntity<?> verifyRegister(String username, String password, String email, String otpCode) {
-        Optional<Otp> otp = otpRepository.findByEmailAndOtpCode(email, otpCode);
+        Optional<Otp> otpOptional = otpRepository.findByEmailAndOtpCode(email, otpCode);
 
-        if (otp.isEmpty() || otp.get().isVerified()) {
+        if (otpOptional.isEmpty() || otpOptional.get().isVerified()) {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Incorrect or already used OTP!"));
         }
-        if (otp.get().getExpiryTime().isBefore(LocalDateTime.now())) {
+
+        Otp otp = otpOptional.get();
+        if (otp.getExpiryTime().isBefore(LocalDateTime.now())) {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "OTP has expired!"));
         }
 
-        Otp verifiedOtp = otp.get();
-        verifiedOtp.setVerified(true);
-        otpRepository.save(verifiedOtp);
+        otp.setVerified(true);
+        otpRepository.save(otp);
 
         User user = new User();
         user.setUsername(username);
@@ -93,36 +102,39 @@ public class UserService {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Wrong username or email!"));
         }
 
-        String otpCode = String.valueOf((int) (Math.random() * 9999));
+        String otpCode = generateOtpCode();
+
         Otp otp = new Otp();
         otp.setEmail(email);
         otp.setOtpCode(otpCode);
-        otp.setExpiryTime(LocalDateTime.now().plusMinutes(10));
+        otp.setExpiryTime(LocalDateTime.now().plusMinutes(OTP_EXPIRY_MINUTES));
         otp.setVerified(false);
         otpRepository.save(otp);
+
         otpService.sendOtp(email, otpCode);
 
         return ResponseEntity.ok(Map.of("status", "success", "message", "OTP sent to your email. Please verify."));
     }
 
     public ResponseEntity<?> verifyForget(String username, String newPassword, String email, String otpCode) {
-        Optional<Otp> otp = otpRepository.findByEmailAndOtpCode(email, otpCode);
+        Optional<Otp> otpOptional = otpRepository.findByEmailAndOtpCode(email, otpCode);
 
-        if (otp.isEmpty() || otp.get().isVerified()) {
+        if (otpOptional.isEmpty() || otpOptional.get().isVerified()) {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Invalid or already used OTP!"));
         }
-        if (otp.get().getExpiryTime().isBefore(LocalDateTime.now())) {
+
+        Otp otp = otpOptional.get();
+        if (otp.getExpiryTime().isBefore(LocalDateTime.now())) {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "OTP has expired!"));
         }
 
-        Otp verifiedOtp = otp.get();
-        verifiedOtp.setVerified(false);
-        otpRepository.save(verifiedOtp);
+        otp.setVerified(true);
+        otpRepository.save(otp);
 
         User user = userRepository.findByUsernameAndEmail(username, email).get();
         user.setPassword(newPassword);
         userRepository.save(user);
 
-        return ResponseEntity.ok(Map.of("status", "success", "message", "Change password successfully!"));
+        return ResponseEntity.ok(Map.of("status", "success", "message", "Password changed successfully!"));
     }
 }
