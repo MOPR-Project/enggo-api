@@ -2,12 +2,14 @@ package com.example.restapi.account.controller;
 
 import com.example.restapi.account.model.request.LoginRequest;
 import com.example.restapi.account.model.request.RegisterRequest;
+import com.example.restapi.account.model.request.UpdateProfileRequest;
 import com.example.restapi.account.model.request.VerifyRegisterRequest;
 import com.example.restapi.account.service.OtpService;
 import com.example.restapi.account.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,6 +33,11 @@ public class UserController {
         return userService.loginUser(
                 loginRequest.getUsername(),
                 loginRequest.getPassword());
+    }
+
+        @PostMapping("/login-anonymous")
+    public ResponseEntity<?> loginAnonymous() {
+        return userService.loginAnonymous();
     }
 
     @PostMapping("/register")
@@ -105,5 +112,59 @@ public class UserController {
                     "message", "Sen OTP fail!"
             ));
         }
+    }
+
+        @PostMapping("/update-profile")
+        public ResponseEntity<?> updateProfile(@RequestBody UpdateProfileRequest request) {
+            return userService.updateUserProfile(
+                    request.getUsername(),
+                    request.getPassword(),
+                    request.getName(),
+                    request.getDateOfBirth(),
+                    request.getGender()
+            );
+        }
+
+    @PostMapping("/update-avatar")
+    public ResponseEntity<?> updateAvatarFile(
+            @RequestParam String username,
+            @RequestParam String password,
+            @RequestParam("avatar") MultipartFile avatarFile
+    ) {
+        return userService.updateAvatarFile(username, password, avatarFile);
+    }
+
+    @PostMapping("/upgrade-anonymous")
+    public ResponseEntity<?> upgradeAnonymous(
+            @RequestParam String oldUsername,
+            @RequestParam String oldPassword,
+            @RequestParam String newEmail
+    ) {
+        return userService.upgradeAnonymous(oldUsername, oldPassword, newEmail);
+    }
+
+    @PostMapping("/login-google")
+    public ResponseEntity<?> loginWithGoogle(@RequestBody Map<String, String> request) {
+        String idToken = request.get("idToken");
+        return userService.loginWithGoogle(idToken);
+    }
+
+    @PostMapping("/verify-upgrade-anonymous")
+    public ResponseEntity<?> verifyUpgradeAnonymous(
+            @RequestParam String oldUsername,
+            @RequestParam String oldPassword,
+            @RequestParam String newUsername,
+            @RequestParam String newPassword,
+            @RequestParam String newEmail,
+            @RequestParam String otpCode
+    ) {
+        return userService.verifyUpgradeAnonymous(
+                oldUsername,
+                oldPassword,
+                newUsername,
+                newPassword,
+                newEmail,
+                otpCode
+        );
     }
 }
