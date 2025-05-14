@@ -16,7 +16,7 @@ public class SentencesService {
     private SentencesRepository sentencesRepository;
 
     public ResponseEntity<?> loadSentencesByLevel(Long level) {
-        List<Sentences> sentencesList = sentencesRepository.findByLevel(level);
+        List<Sentences> sentencesList = sentencesRepository.findRandomSentencesByLevel(level);
 
         if (sentencesList.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "No sentences found for this level!"));
@@ -24,6 +24,7 @@ public class SentencesService {
 
         return ResponseEntity.ok(Map.of("status", "success", "sentences", sentencesList));
     }
+
 
     public ResponseEntity<?> checkSentencesAnswer(Long sentenceId, List<String> userWords) {
         if (userWords == null || userWords.isEmpty()) {
